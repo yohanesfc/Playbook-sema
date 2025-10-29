@@ -1,0 +1,9 @@
+---
+- name: Playbook untuk menghapus direktori
+  hosts: all
+  become: yes # Mungkin diperlukan jika direktori dimiliki oleh root
+  tasks:
+    - name: Menghapus direktori /tmp/sema
+      ansible.builtin.file:
+        path: /tmp/sema
+        state: absent
