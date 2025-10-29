@@ -1,0 +1,20 @@
+# deploy_nginx.yml
+---
+- name: Deploy Nginx container
+  hosts: localhost
+  connection: local
+  become: yes # Diperlukan untuk berinteraksi dengan Docker daemon
+  
+  tasks:
+    - name: Ensure the latest Nginx image is pulled
+      community.docker.docker_image:
+        name: nginx
+        source: pull
+
+    - name: Start Nginx container
+      community.docker.docker_container:
+        name: my_nginx_server
+        image: nginx
+        state: started
+        published_ports:
+          - "8080:80"

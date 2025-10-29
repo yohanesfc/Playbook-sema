@@ -1,0 +1,5 @@
+# requirements.yml
+---
+collections:
+  - name: community.docker
+    version: "3.4.11" # Mengunci versi spesifik adalah praktik yang baik
