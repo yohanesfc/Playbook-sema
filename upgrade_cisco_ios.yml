@@ -1,0 +1,83 @@
+---
+- name: Playbook untuk Upgrade Cisco IOS
+  hosts: cisco_routers  # Ganti dengan grup host Anda di inventory
+  gather_facts: no
+  connection: network_cli
+  become: yes
+  become_method: enable
+
+  vars:
+    # --- GANTI VARIABEL INI ---
+    new_ios_image: "c1900-universalk9-mz.SPA.156-3.M.bin"
+    local_image_path: "/path/to/images/{{ new_ios_image }}"
+    expected_md5: "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4" # Ganti dengan hash MD5 asli
+    # ---------------------------
+
+  tasks:
+    - name: 1. Kumpulkan fakta (termasuk versi IOS saat ini)
+      cisco.ios.ios_facts:
+        gather_subset:
+          - "!all"
+          - "!min"
+          - "version" # Kita hanya butuh info versi
+      register: device_facts
+
+    - name: 2. Tampilkan versi saat ini (opsional)
+      ansible.builtin.debug:
+        msg: "Versi IOS saat ini adalah: {{ device_facts.ansible_facts.net_version }} | Image: {{ device_facts.ansible_facts.net_image }}"
+
+    # Blok ini akan menjalankan semua tugas upgrade HANYA jika
+    # nama file image baru tidak ditemukan di nama image yang sedang berjalan.
+    - name: 3. Jalankan proses upgrade jika versi berbeda
+      block:
+        - name: 3a. Salin file image IOS baru ke flash
+          cisco.ios.ios_file_copy:
+            local_file: "{{ local_image_path }}"
+            remote_file: "flash:{{ new_ios_image }}"
+            # Modul ini secara otomatis memeriksa ruang kosong sebelum menyalin
+          register: copy_result
+
+        - name: 3b. Verifikasi checksum MD5 pada perangkat
+          ansible.builtin.assert:
+            that:
+              - "copy_result.checksum == expected_md5"
+            fail_msg: "Checksum MD5 GAGAL! File di perangkat rusak. Membatalkan."
+            success_msg: "Checksum MD5 cocok. File berhasil disalin."
+
+        - name: 3c. Hapus konfigurasi boot lama (opsional tapi disarankan)
+          cisco.ios.ios_config:
+            lines: "no boot system"
+          # Ini membersihkan entri 'boot system' yang lama
+
+        - name: 3d. Atur image baru sebagai boot system
+          cisco.ios.ios_config:
+            lines: "boot system flash:{{ new_ios_image }}"
+            save_when: modified # Simpan konfigurasi jika ada perubahan
+
+        - name: 3e. Reload perangkat
+          cisco.ios.ios_reload:
+            wait_for_reboot: true
+            reboot_timeout: 900 # 15 menit, beri waktu untuk upgrade
+          register: reload_result
+
+        - name: 3f. Verifikasi versi baru setelah reboot
+          cisco.ios.ios_facts:
+            gather_subset:
+              - "!all"
+              - "!min"
+              - "version"
+          register: post_upgrade_facts
+
+        - name: 3g. Pastikan versi baru sudah aktif
+          ansible.builtin.assert:
+            that:
+              - "new_ios_image in post_upgrade_facts.ansible_facts.net_image"
+            fail_msg: "Upgrade GAGAL! Versi baru tidak aktif."
+            success_msg: "Upgrade SUKSES! Perangkat menjalankan {{ post_upgrade_facts.ansible_facts.net_version }}"
+
+      when: "new_ios_image not in device_facts.ansible_facts.net_image"
+
+    - name: 4. Lewati jika versi sudah sesuai
+      ansible.builtin.debug:
+        msg: "Perangkat sudah menjalankan image yang diinginkan. Tidak ada tindakan."
+      when: "new_ios_image in device_facts.ansible_facts.net_image"

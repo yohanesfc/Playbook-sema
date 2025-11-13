@@ -1,6 +1,6 @@
 ---
 - name: Playbook untuk membuat direktori sema
-  hosts: all  # 'all' berarti akan dijalankan di semua server dalam inventory Anda
+  # hosts: all  # 'all' berarti akan dijalankan di semua server dalam inventory Anda
   become: yes # Gunakan ini jika butuh hak akses root/sudo untuk membuat direktori
   tasks:
     - name: Membuat direktori /tmp/sema
