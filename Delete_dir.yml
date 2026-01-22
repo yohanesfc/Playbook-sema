@@ -1,9 +1,9 @@
 ---
-- name: Playbook untuk menghapus direktori
-  hosts: all
-  become: yes # Mungkin diperlukan jika direktori dimiliki oleh root
+- name: Playbook untuk menghapus direktori sema
+  hosts: GCP_Web
+  become: yes
   tasks:
-    - name: Menghapus direktori /tmp/sema
+    - name: Hapus direktori /tmp/sema
       ansible.builtin.file:
         path: /tmp/sema
         state: absent
