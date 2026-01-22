@@ -1,11 +1,10 @@
 ---
 - name: Playbook untuk membuat direktori sema
-  hosts: GCP-Web
-# 'all' berarti akan dijalankan di semua server dalam inventory Anda
-  become: yes # Gunakan ini jika butuh hak akses root/sudo untuk membuat direktori
+  hosts: GCP_Web
+  become: yes
   tasks:
     - name: Membuat direktori /tmp/sema
       ansible.builtin.file:
-        path: /tmp/sema  # Lokasi direktori yang akan dibuat
+        path: /tmp/sema
         state: directory
         mode: '0755'
