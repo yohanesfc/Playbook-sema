@@ -1,0 +1,23 @@
+- name: Hardening Ubuntu 25.04 (OCI Instance)
+  hosts: GCP-Web
+  become: yes
+  tasks:
+    - name: Ensure SSH Root Login is disabled
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^PermitRootLogin'
+        line: 'PermitRootLogin no'
+      notify: Restart SSH
+
+    - name: Set permissions on /etc/shadow
+      file:
+        path: /etc/shadow
+        owner: root
+        group: shadow
+        mode: '0640'
+
+  handlers:
+    - name: Restart SSH
+      service:
+        name: ssh
+        state: restarted
