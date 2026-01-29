@@ -1,5 +1,5 @@
 - name: Hardening Ubuntu 25.04 (OCI Instance)
-  hosts: GCP-Web
+  hosts: GCP_Web
   become: yes
   tasks:
     - name: Ensure SSH Root Login is disabled
